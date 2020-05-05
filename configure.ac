@@ -84,6 +84,11 @@ AC_ARG_ENABLE(malloc-replacement,
 AC_ARG_ENABLE(openssl,
      AS_HELP_STRING(--disable-openssl, disable support for openssl encryption),
         [], [enable_openssl=yes])
+AC_ARG_ENABLE(pthread-backend,
+[  --enable-pthread-backend=@<:@=THREAD@:>@  set the pthreads backend,
+        native   - use native POSIX threads
+        argobots - use Argobots-backend
+], [], [enable_pthread_backend=native])
 AC_ARG_ENABLE(debug-mode,
      AS_HELP_STRING(--disable-debug-mode, disable support for running in debug mode),
         [], [enable_debug_mode=yes])
@@ -96,6 +101,9 @@ AC_ARG_ENABLE([libevent-regress],
 AC_ARG_ENABLE([function-sections],
      AS_HELP_STRING([--enable-function-sections, make static library allow smaller binaries with --gc-sections]),
 	[], [enable_function_sections=no])
+AC_ARG_WITH([argobots],
+    AS_HELP_STRING([--with-argobots=PATH],
+	[specify path where Argobots include directory and lib directory can be found],))
 
 
 AC_PROG_LIBTOOL
@@ -652,6 +660,19 @@ if test x$bwin32 != xtrue && test "$enable_thread_support" != "no"; then
   )
 fi
 AM_CONDITIONAL(PTHREADS, [test "$have_pthreads" != "no" && test "$enable_thread_support" != "no"])
+
+# check if Argobots can be found
+if test x$enable_pthread_backend = xargobots && test "$enable_thread_support" != "no"; then
+  # TODO: check availability of a header and a library
+  AC_DEFINE(USE_ARGOBOTS, 1,
+    [Define if we have Argobots on this system])
+  use_argobots=yes
+  if test "x$with_argobots" != "x"; then
+    CFLAGS="$CFLAGS -I$with_argobots/include"
+    LDFLAGS="$LDFLAGS -Wl,-rpath,$with_argobots/lib -L$with_argobots/lib -labt "
+  fi
+fi
+AM_CONDITIONAL(ARGOBOTS, [test x"$use_argobots" = x"yes"])
 
 # check if we should compile locking into the library
 if test x$enable_thread_support = xno; then

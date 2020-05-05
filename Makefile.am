@@ -198,9 +198,17 @@ libevent_core_la_LIBADD = @LTLIBOBJS@ $(SYS_LIBS)
 libevent_core_la_LDFLAGS = $(GENERIC_LDFLAGS)
 
 if PTHREADS
+if ARGOBOTS
+# Argobots wrapper
+libevent_pthreads_la_SOURCES = evthread_argobots.c
+libevent_pthreads_la_LIBADD = $(MAYBE_CORE) $(ABT_LIBS)
+libevent_pthreads_la_LDFLAGS = $(GENERIC_LDFLAGS) $(ABT_LDFLAGS)
+else
+# Normal Pthreads
 libevent_pthreads_la_SOURCES = evthread_pthread.c
 libevent_pthreads_la_LIBADD = $(MAYBE_CORE)
 libevent_pthreads_la_LDFLAGS = $(GENERIC_LDFLAGS)
+endif
 endif
 
 libevent_extra_la_SOURCES = $(EXTRA_SRC)
