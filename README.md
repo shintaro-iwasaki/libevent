@@ -7,7 +7,7 @@ We will move to another repository once it becomes stable.
 
 ```
 sh autogen.sh
-./configure --enable-pthread-backend=argobots --with-argobots=ARGOBOTS_INSTALL_DIR
+./configure --enable-pthread-backend=argobots --with-argobots=ARGOBOTS_INSTALL_DIR --prefix=INSTALL_PATH
 make -j NJOBS
 make install
 ```
