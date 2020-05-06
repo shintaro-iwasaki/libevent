@@ -27,6 +27,7 @@
 #include "evconfig-private.h"
 
 #include <abt.h>
+#include <pthread.h>
 
 struct event_base;
 #include "event2/thread.h"
@@ -84,9 +85,28 @@ evthread_argobots_unlock(unsigned mode, void *lock_)
 static unsigned long
 evthread_argobots_get_id(void)
 {
-	ABT_thread_id id;
-	ABT_thread_self_id(&id);
-	return (unsigned long)id;
+	unsigned long id = 0;
+	ABT_thread thr;
+	int ret = ABT_thread_self(&thr);
+	if (ret != ABT_SUCCESS) {
+		/* This is called on a non-Argobots function. Use Pthreads ID. */
+		union {
+			pthread_t thr;
+#if _EVENT_SIZEOF_PTHREAD_T > _EVENT_SIZEOF_LONG
+			ev_uint64_t id;
+#else
+			unsigned long id;
+#endif
+		} r;
+#if _EVENT_SIZEOF_PTHREAD_T < _EVENT_SIZEOF_LONG
+		memset(&r, 0, sizeof(r));
+#endif
+		r.thr = pthread_self();
+		id = (unsigned long)r.id;
+	} else {
+		id = (unsigned long)((intptr_t)thr);
+	}
+	return id;
 }
 
 static void *
