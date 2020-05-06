@@ -64,10 +64,14 @@ static int
 evthread_argobots_lock(unsigned mode, void *lock_)
 {
 	ABT_mutex lock = (ABT_mutex)lock_;
-	if (mode & EVTHREAD_TRY)
-		return ABT_mutex_trylock(lock);
-	else
-		return ABT_mutex_lock(lock);
+	int r;
+	if (mode & EVTHREAD_TRY) {
+		r = ABT_mutex_trylock(lock);
+		return (r == ABT_SUCCESS) ? 0 : EBUSY;
+	} else {
+		r = ABT_mutex_lock(lock);
+		return (r == ABT_SUCCESS) ? 0 : EAGAIN;
+	}
 }
 
 static int
@@ -126,7 +130,7 @@ evthread_argobots_cond_wait(void *cond_, void *lock_, const struct timeval *tv)
 		evutil_gettimeofday(&now, NULL);
 		evutil_timeradd(&now, tv, &abstime);
 		ts.tv_sec = abstime.tv_sec;
-		ts.tv_nsec = abstime.tv_usec*1000;
+		ts.tv_nsec = abstime.tv_usec * 1000;
 		r = ABT_cond_timedwait(cond, lock, &ts);
 		if (r == ABT_ERR_COND_TIMEDOUT)
 			return 1;
@@ -160,7 +164,9 @@ evthread_use_pthreads_with_flags(int flags)
 	};
 
 	ABT_init(0, NULL);
-	attr_default = ABT_MUTEX_ATTR_NULL;
+
+	ABT_mutex_attr_create(&attr_default);
+	ABT_mutex_attr_set_recursive(attr_default, ABT_FALSE);
 
 	/* Set ourselves up to get recursive locks. */
 	ABT_mutex_attr_create(&attr_recursive);
